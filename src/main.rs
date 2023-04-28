@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 use tokio::time::sleep;
 use vocalize::Vocalize;
 
-const MAX: f32 = 700.0;
+const MAX: f32 = 450.0;
 
 fn main() {
     dioxus_desktop::launch(App);
@@ -14,8 +14,17 @@ fn main() {
 
 fn App(cx: Scope) -> Element {
     let svg_style = r"
-        width: 100vw;
-        height: 100vh;
+        html {
+            width: 100vw;
+            height: 100vh;
+            margin: 0px;
+        }
+
+        body, #main, svg {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
     ";
 
     let lines = use_state(cx, || Vec::new());
@@ -25,7 +34,7 @@ fn App(cx: Scope) -> Element {
             let vocalize = Box::new(Vocalize::new());
             vocalize.run();
             loop {
-                sleep(Duration::from_millis(1000 / 30)).await;
+                sleep(Duration::from_millis(1000 / 60)).await;
                 lines.set(
                     vocalize
                         .clone()
@@ -48,6 +57,7 @@ fn App(cx: Scope) -> Element {
                                 l.iter().map(|(a, b)| format!("{} {}", a, b)).collect();
                             temp.join(" L")
                         })
+                        .filter(|l| !l.is_empty())
                         .collect(),
                 );
             }
@@ -55,8 +65,8 @@ fn App(cx: Scope) -> Element {
     });
 
     cx.render(rsx! {
+        style { svg_style }
         svg {
-            style: svg_style,
             preserve_aspect_ratio: "xMidYMid meet",
             fill: "none",
             stroke: "red",
@@ -80,7 +90,7 @@ fn App(cx: Scope) -> Element {
                     style: "fill: rgb(91 206 250); stroke: none",
                 },
 
-                for y in (50..450).step_by(50) {
+                for y in (50..(MAX as usize -50)).step_by(50) {
                     rsx! {
                         line {
                             x1: "0",

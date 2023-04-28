@@ -76,7 +76,7 @@ impl Vocalize {
                 loop {
                     thread::sleep(Duration::from_millis(1000 / 140));
                     let rw = raw.lock().unwrap();
-                    let sample_size = (sample_rate / 5) as usize;
+                    let sample_size = 20000 as usize;
                     if rw.len() >= sample_size {
                         let mut buffer: Vec<Complex<f32>> = rw
                             .iter()
