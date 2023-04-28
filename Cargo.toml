@@ -1,0 +1,29 @@
+[package]
+name = "vocalize"
+version = "0.1.0"
+edition = "2021"
+description = "Analyze voice fondamental frequency"
+
+[package.metadata.bundle]
+name = "Vocalize"
+identifier = "fr.glargh.vocalize"
+version = "1.0.0"
+copyright = "Copyright (c) Nabos. All rights reserved."
+category = "Developer Tool"
+short_description = "Analyze voice fondamental frequency"
+long_description = """
+This app is made for voice feminization and allows the user to see the fondamental frequency of their voice.
+"""
+
+[dependencies]
+dioxus = "0.3.2"
+dioxus-desktop = "0.3.0"
+serde = { version = "1.0", features = ["derive"] }
+arraydeque = "0.5.1"
+cpal = { version = "0.15.2", features = ["wasm-bindgen"] }
+rustfft = "6.1.0"
+plotters = "0.3.4"
+plotters-iced = "0.8"
+futures = "0.3.28"
+futures-util = "0.3.28"
+tokio = { version = "1.28.0", features = ["time"] }
