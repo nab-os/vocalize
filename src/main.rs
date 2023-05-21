@@ -55,7 +55,7 @@ fn App(cx: Scope) -> Element {
                         .map(|l| {
                             let temp: Vec<String> =
                                 l.iter().map(|(a, b)| format!("{} {}", a, b)).collect();
-                            temp.join(" L")
+                            temp.join(" C")
                         })
                         .filter(|l| !l.is_empty())
                         .collect(),
