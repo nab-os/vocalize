@@ -7,7 +7,7 @@ use std::{
 
 use cpal::{
     traits::{DeviceTrait, HostTrait, StreamTrait},
-    InputCallbackInfo,
+    InputCallbackInfo, SampleFormat, SampleRate, SupportedBufferSize, SupportedStreamConfig,
 };
 
 use rustfft::{num_complex::Complex, num_traits::Pow, FftPlanner};
@@ -25,6 +25,11 @@ pub struct Vocalize {
 }
 
 impl Vocalize {
+    pub fn get_values(self) -> VecDeque<Option<f32>> {
+        let fr = self.frequencies_postprocessed.lock().unwrap();
+        fr.clone()
+    }
+
     pub fn new() -> Self {
         let raw: Raw = Arc::new(Mutex::new(VecDeque::new()));
         let frequencies: Frequencies =
@@ -38,13 +43,68 @@ impl Vocalize {
         }
     }
 
+    fn postprocess(before: Frequencies, after: Frequencies) {
+        let window_size = 5;
+
+        let before = before.lock().unwrap();
+        let count = before
+            .iter()
+            .rev()
+            .take(window_size)
+            .filter(|a| a.is_some())
+            .count();
+
+        let mut after = after.lock().unwrap();
+        after.rotate_left(1);
+        after[before.len() - 1] = before[before.len() - 1];
+        if count > 3 {
+            let sum: f32 = before
+                .iter()
+                .rev()
+                .take(window_size)
+                .filter(|a| a.is_some())
+                .map(|a| a.unwrap())
+                .sum();
+            let mean = sum / count as f32;
+            let sum_variance: f32 = before
+                .iter()
+                .rev()
+                .take(window_size)
+                .filter(|a| a.is_some())
+                .map(|a| {
+                    let a = a.unwrap();
+                    (a - mean).pow(2)
+                })
+                .sum();
+            let mean_variance = sum_variance / ((count - 1) as f32);
+            let standard_deviation = mean_variance.sqrt();
+
+            if let Some(_a) = before[before.len() - 1] {
+                let centered_reduced = (_a - mean) / standard_deviation;
+                after[before.len() - 1] = Some(_a);
+                if centered_reduced > 2.0 {
+                    after[before.len() - 1] = None;
+                }
+            }
+        }
+    }
+
     pub fn run(&self) {
         let host = cpal::default_host();
         let device = host.default_input_device().unwrap();
         println!("Input device: {}", device.name().unwrap());
 
-        let config = device.default_input_config().unwrap();
-        println!("Default input config: {:?}", config);
+        let config = SupportedStreamConfig::new(
+            1,
+            SampleRate(384000),
+            SupportedBufferSize::Range {
+                min: 3,
+                max: 4194304,
+            },
+            SampleFormat::F32,
+        );
+        println!("Input config: {:?}", config);
+
         println!("Begin recording...");
 
         println!("Vocalize started");
@@ -73,10 +133,14 @@ impl Vocalize {
                     }
                 };
                 stream.play().unwrap();
+                let sample_size = (384000.0 / 50.0) as usize * 20;
+                let freq_step = sample_rate as f32 / sample_size as f32;
+                println!("Sample rate: {}", sample_rate);
+                println!("Sample size: {}", sample_size);
+                println!("Frequency steps: {}Hz", freq_step);
                 loop {
                     thread::sleep(Duration::from_millis(1000 / 140));
                     let rw = raw.lock().unwrap();
-                    let sample_size = 20000 as usize;
                     if rw.len() >= sample_size {
                         let mut buffer: Vec<Complex<f32>> = rw
                             .iter()
@@ -95,15 +159,14 @@ impl Vocalize {
                         fft.process(&mut buffer);
                         let norms: Vec<(usize, f32)> = buffer
                             .iter()
-                            .take(buffer.len() / 4)
+                            .take(buffer.len() / 2)
                             .map(|freq| ((freq.re * freq.re + freq.im * freq.im) as f32).sqrt())
                             .enumerate()
                             .collect();
 
                         let max_peak = norms.iter().max_by_key(|(_i, norm)| *norm as u32).unwrap();
 
-                        let freq_step = sample_rate as f32 / buffer.len() as f32;
-                        let freq = 2.0 * max_peak.0 as f32 * freq_step;
+                        let freq = max_peak.0 as f32 * freq_step;
                         if max_peak.1 > 5.0 {
                             println!(
                                 "{:>9}Hz \t\t {:>4}/{:>4} \t\t\t max: {:0<11}",
@@ -133,57 +196,6 @@ impl Vocalize {
                     Vocalize::postprocess(frequencies.clone(), frequencies_postprocessed.clone());
                 }
             });
-        }
-    }
-
-    pub fn get_values(self) -> VecDeque<Option<f32>> {
-        let fr = self.frequencies_postprocessed.lock().unwrap();
-        fr.clone()
-    }
-
-    fn postprocess(before: Frequencies, after: Frequencies) {
-        let window_size = 5;
-
-        let before = before.lock().unwrap();
-        let count = before
-            .iter()
-            .rev()
-            .take(window_size)
-            .filter(|a| a.is_some())
-            .count();
-
-        let mut after = after.lock().unwrap();
-        after.rotate_left(1);
-        after[before.len() - 1] = before[before.len() - 1];
-        if count > 3 {
-            let sum: f32 = before
-                .iter()
-                .rev()
-                .take(window_size)
-                .filter(|a| a.is_some())
-                .map(|a| a.unwrap())
-                .sum();
-            let mean = sum / count as f32;
-            // let sum_variance: f32 = before
-            //     .iter()
-            //     .rev()
-            //     .take(window_size)
-            //     .filter(|a| a.is_some())
-            //     .map(|a| {
-            //         let a = a.unwrap();
-            //         (a - mean).pow(2)
-            //     })
-            //     .sum();
-            // let mean_variance = sum_variance / ((count - 1) as f32);
-            // let standard_deviation = mean_variance.sqrt();
-
-            if let Some(_a) = before[before.len() - 1] {
-                // let centered_reduced = (a - mean) / standard_deviation;
-                after[before.len() - 1] = Some(mean);
-                // if standard_deviation > 2000.0 {
-                //     after[before.len() - 1] = None;
-                // }
-            }
         }
     }
 
