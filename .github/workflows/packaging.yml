@@ -32,6 +32,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install msvc target
+      run: rustup target add x86_64-pc-windows-msvc
     - name: Install xwin
       run: cargo install cargo-xwin
     - name: Build
