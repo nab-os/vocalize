@@ -19,7 +19,7 @@ jobs:
     - name: APT Update
       run: sudo apt update
     - name: Install system dependencies
-      run: sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev libappindicator3-dev libasound2
+      run: sudo apt install libwebkit2gtk-4.0-dev libgtk-3-dev libappindicator3-dev libasound2-dev
     - name: Build
       run: cargo build --verbose --release
     - name: Archive build
