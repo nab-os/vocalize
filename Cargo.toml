@@ -8,8 +8,8 @@ description = "Analyze voice fondamental frequency"
 name = "Vocalize"
 identifier = "fr.glargh.vocalize"
 version = "1.0.0"
-copyright = "Copyright (c) Nabos. All rights reserved."
-category = "Developer Tool"
+resources = []
+category = "medical"
 short_description = "Analyze voice fondamental frequency"
 long_description = """
 This app is made for voice feminization and allows the user to see the fondamental frequency of their voice.

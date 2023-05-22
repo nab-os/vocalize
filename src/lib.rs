@@ -81,7 +81,7 @@ impl Vocalize {
 
             if let Some(_a) = before[before.len() - 1] {
                 let centered_reduced = (_a - mean) / standard_deviation;
-                after[before.len() - 1] = Some(_a);
+                after[before.len() - 1] = Some(mean);
                 if centered_reduced > 2.0 {
                     after[before.len() - 1] = None;
                 }

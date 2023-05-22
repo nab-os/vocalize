@@ -53,9 +53,12 @@ fn App(cx: Scope) -> Element {
                         })
                         .iter()
                         .map(|l| {
-                            let temp: Vec<String> =
-                                l.iter().map(|(a, b)| format!("{} {}", a, b)).collect();
-                            temp.join(" L")
+                            let mut temp: Vec<String> =
+                                l.iter().map(|(x1, y1)| format!("{} {}", x1, y1)).collect();
+                            if temp.len() >= 1 {
+                                temp.insert(1, "L".to_string());
+                            }
+                            temp.join(" ")
                         })
                         .filter(|l| !l.is_empty())
                         .collect(),
@@ -115,7 +118,7 @@ fn App(cx: Scope) -> Element {
                     rsx!{
                         path {
                             "stroke-linecap": "round",
-                            "stroke-width": "2",
+                            "stroke-width": "1",
                             "stroke-linejoin": "round",
                             d: "M{l.clone()}",
                         }
